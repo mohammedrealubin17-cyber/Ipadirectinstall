@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IPA Installer (Demo)</title>
+</head>
+<body>
+  <h1>IPA Direct Install (Not Fully Supported)</h1>
+  <p>Select an IPA file:</p>
+  <input type="file" id="ipaFile" accept=".ipa">
+  <br><br>
+  <button onclick="installIPA()">Install</button>
+
+  <p id="status"></p>
+
+  <script>
+    function installIPA() {
+      const fileInput = document.getElementById('ipaFile');
+      const status = document.getElementById('status');
+
+      if (!fileInput.files.length) {
+        status.textContent = "Please select an IPA file.";
+        return;
+      }
+
+      status.textContent = "⚠️ Direct IPA installation is not supported in browsers. Use AltStore or Sideloadly.";
+    }
+  </script>
+</body>
+</html>
