@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>IPA Store Publisher</title>
+<title>IPA Store Upload System</title>
 
 <style>
 body {
@@ -15,15 +15,15 @@ body {
 header {
   text-align: center;
   padding: 20px;
-  font-size: 22px;
   background: #111;
+  font-size: 22px;
 }
 
 .container {
-  padding: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
+  padding: 15px;
 }
 
 .card {
@@ -50,35 +50,38 @@ button {
   background: #1a1a1a;
   padding: 10px;
   border-radius: 15px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+img {
+  width: 70px;
+  height: 70px;
+  border-radius: 15px;
 }
 </style>
 </head>
 
 <body>
 
-<header>📱 IPA Store Publisher System</header>
+<header>📱 IPA Store (Image Upload Enabled)</header>
 
 <div class="container">
 
-  <!-- PUBLISH PANEL -->
+  <!-- UPLOAD PANEL -->
   <div class="card">
     <h3>Publish App</h3>
 
     <input id="name" placeholder="App Name">
 
-    <input id="icon" placeholder="Icon URL">
+    <input type="file" id="icon" accept="image/*">
 
-    <input id="ipa" type="file" accept=".ipa">
-
-    <select id="mode">
-      <option value="direct">Direct Install IPA</option>
-      <option value="upload">Upload IPA File</option>
-    </select>
+    <input id="plist" placeholder="Plist URL (direct install)">
 
     <select id="price">
       <option value="0">Free</option>
-      <option value="1">Paid ($1)</option>
-      <option value="5">Paid ($5)</option>
+      <option value="1">Paid $1</option>
+      <option value="5">Paid $5</option>
     </select>
 
     <button onclick="publish()">Publish App</button>
@@ -96,46 +99,45 @@ button {
 
 let apps = JSON.parse(localStorage.getItem("apps") || "[]");
 
+// Convert image to base64
+function toBase64(file, callback) {
+  const reader = new FileReader();
+  reader.onload = () => callback(reader.result);
+  reader.readAsDataURL(file);
+}
+
 function publish() {
 
   const name = document.getElementById("name").value;
-  const icon = document.getElementById("icon").value;
-  const mode = document.getElementById("mode").value;
+  const plist = document.getElementById("plist").value;
   const price = document.getElementById("price").value;
+  const iconFile = document.getElementById("icon").files[0];
 
-  const ipaFile = document.getElementById("ipa").files[0];
-
-  // Fake "direct install conversion"
-  let installLink;
-
-  if (mode === "direct") {
-    installLink = "https://yourdomain.com/" + name + ".plist";
-  } else {
-    installLink = "uploaded-file://" + (ipaFile ? ipaFile.name : "unknown.ipa");
+  if (!iconFile) {
+    alert("Please select an icon image");
+    return;
   }
 
-  const app = {
-    name,
-    icon,
-    price,
-    mode,
-    install: installLink
-  };
+  toBase64(iconFile, (iconBase64) => {
 
-  apps.push(app);
-  localStorage.setItem("apps", JSON.stringify(apps));
+    const app = {
+      name,
+      plist,
+      price,
+      icon: iconBase64
+    };
 
-  render();
+    apps.push(app);
+    localStorage.setItem("apps", JSON.stringify(apps));
+
+    render();
+  });
 }
 
-function install(link) {
-  if (link.startsWith("https://")) {
-    window.location.href =
-      "itms-services://?action=download-manifest&url=" +
-      encodeURIComponent(link);
-  } else {
-    alert("This IPA is uploaded but not hosted. Backend required.");
-  }
+function install(plist) {
+  window.location.href =
+    "itms-services://?action=download-manifest&url=" +
+    encodeURIComponent(plist);
 }
 
 function render() {
@@ -147,13 +149,10 @@ function render() {
     div.className = "app";
 
     div.innerHTML = `
-      <h4>${app.name}</h4>
-      <img src="${app.icon}" width="60">
+      <img src="${app.icon}">
+      <h3>${app.name}</h3>
       <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
-      <p>Mode: ${app.mode}</p>
-      <button onclick="install('${app.install}')">
-        Install
-      </button>
+      <button onclick="install('${app.plist}')">Install</button>
     `;
 
     store.appendChild(div);
