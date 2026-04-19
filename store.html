@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>App Store</title>
 
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d0d0d;
+  color: white;
+}
+
+header {
+  padding: 20px;
+  text-align: center;
+  background: #111;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  padding: 15px;
+}
+
+.card {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.card img {
+  width: 70px;
+  height: 70px;
+  border-radius: 15px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: #0a84ff;
+  color: white;
+  font-weight: bold;
+}
+
+.nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.nav a {
+  color: white;
+  text-decoration: none;
+  background: #222;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>📱 IPA Store</header>
+
+<div class="nav">
+  <a href="index.html">Home</a>
+  <a href="store.html">Store</a>
+  <a href="upload.html">Upload</a>
+</div>
+
+<div class="container" id="store"></div>
+
+<script>
+let apps = JSON.parse(localStorage.getItem("apps") || "[]");
+
+function install(plist) {
+  window.location.href =
+    "itms-services://?action=download-manifest&url=" +
+    encodeURIComponent(plist);
+}
+
+function render() {
+  const store = document.getElementById("store");
+  store.innerHTML = "";
+
+  if (apps.length === 0) {
+    store.innerHTML = "<p style='text-align:center;'>No apps published yet</p>";
+    return;
+  }
+
+  apps.forEach(app => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <img src="${app.icon}">
+      <h3>${app.name}</h3>
+      <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
+      <button onclick="install('${app.plist}')">Install</button>
+    `;
+
+    store.appendChild(div);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
