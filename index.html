@@ -1,353 +1,67 @@
-<script>
-const DB_URL = "https://yourname.github.io/repo-name/apps.json";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-async function loadApps() {
-  const res = await fetch(DB_URL);
-  const apps = await res.json();
+// 🔥 Your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBdpU_R65rhoWwfZOhw6D0aYyZRMQZ2XR8",
+  authDomain: "ipa-store-6d0b3.firebaseapp.com",
+  projectId: "ipa-store-6d0b3",
+  storageBucket: "ipa-store-6d0b3.firebasestorage.app",
+  messagingSenderId: "814971997334",
+  appId: "1:814971997334:web:6d0fbfcc253149b725c6b7"
+};
 
-  const store = document.getElementById("store");
-  store.innerHTML = "";
+// Init Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  apps.forEach(app => {
-    const div = document.createElement("div");
-    div.className = "app";
-
-    div.innerHTML = `
-      <img src="${app.icon}" width="70">
-      <h3>${app.name}</h3>
-      <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
-      <button onclick="install('${app.plist}')">
-        Install
-      </button>
-    `;
-
-    store.appendChild(div);
-  });
-}
-
-function install(plist) {
-  window.location.href =
-    "itms-services://?action=download-manifest&url=" +
-    encodeURIComponent(plist);
-}
-
-loadApps();
-</script>  margin-top: 8px;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-}
-
-button {
-  background: #0a84ff;
-  color: white;
-  font-weight: bold;
-}
-
-.app {
-  background: #1a1a1a;
-  padding: 10px;
-  border-radius: 15px;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-img {
-  width: 70px;
-  height: 70px;
-  border-radius: 15px;
-}
-</style>
-</head>
-
-<body>
-
-<header>📱 SAFE IPA STORE PUBLISHER</header>
-
-<div class="container">
-
-  <!-- PUBLISH -->
-  <div class="card">
-    <h3>Publish App</h3>
-
-    <input id="name" placeholder="App Name">
-
-    <!-- ICON FILE (SAFE LABELED) -->
-    <label>App Icon (image only)</label>
-    <input id="icon" type="file" accept="image/*">
-
-    <!-- IPA FILE (SAFE LABELED) -->
-    <label>IPA File (ONLY .ipa allowed)</label>
-    <input id="ipa" type="file" accept=".ipa">
-
-    <select id="price">
-      <option value="0">Free</option>
-      <option value="1">Paid $1</option>
-      <option value="5">Paid $5</option>
-    </select>
-
-    <label>
-      <input type="checkbox" id="makePlist">
-      Generate plist file (download)
-    </label>
-
-    <button onclick="publish()">Publish App</button>
-  </div>
-
-  <!-- STORE -->
-  <div class="card">
-    <h3>Store</h3>
-    <div id="store"></div>
-  </div>
-
-</div>
-
-<script>
-
-let apps = JSON.parse(localStorage.getItem("apps") || "[]");
-
-// Convert file → base64
-function toBase64(file) {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
-}
-
-// Validate file types
-function validate(icon, ipa) {
-  if (!icon || !icon.type.startsWith("image/")) {
-    alert("Icon must be an image file");
-    return false;
-  }
-
-  if (!ipa || !ipa.name.endsWith(".ipa")) {
-    alert("You must upload a valid .ipa file");
-    return false;
-  }
-
-  return true;
-}
-
-// Create plist text
-function createPlist(app) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
- "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>items</key>
-  <array>
-    <dict>
-      <key>assets</key>
-      <array>
-        <dict>
-          <key>kind</key>
-          <string>software-package</string>
-          <key>url</key>
-          <string>https://yourdomain.com/${app.name}.ipa</string>
-        </dict>
-      </array>
-      <key>metadata</key>
-      <dict>
-        <key>bundle-identifier</key>
-        <string>com.${app.name.toLowerCase()}</string>
-        <key>bundle-version</key>
-        <string>1.0</string>
-        <key>kind</key>
-        <string>software</string>
-        <key>title</key>
-        <string>${app.name}</string>
-      </dict>
-    </dict>
-  </array>
-</dict>
-</plist>`;
-}
-
-// Download plist file
-function downloadPlist(text, name) {
-  const blob = new Blob([text], { type: "text/xml" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name + ".plist";
-  a.click();
-}
-
-async function publish() {
+// 📤 Publish app
+window.publish = async function () {
 
   const name = document.getElementById("name").value;
   const iconFile = document.getElementById("icon").files[0];
-  const ipaFile = document.getElementById("ipa").files[0];
-  const price = document.getElementById("price").value;
-  const makePlist = document.getElementById("makePlist").checked;
-
-  if (!validate(iconFile, ipaFile)) return;
-
-  const iconBase64 = await toBase64(iconFile);
-
-  const app = {
-    name,
-    icon: iconBase64,
-    price,
-    ipa: ipaFile.name
-  };
-
-  apps.push(app);
-  localStorage.setItem("apps", JSON.stringify(apps));
-
-  render();
-
-  // optional plist generator
-  if (makePlist) {
-    const plist = createPlist(app);
-    downloadPlist(plist, name);
-  }
-}
-
-function render() {
-  const store = document.getElementById("store");
-  store.innerHTML = "";
-
-  apps.forEach(app => {
-    const div = document.createElement("div");
-    div.className = "app";
-
-    div.innerHTML = `
-      <img src="${app.icon}">
-      <h3>${app.name}</h3>
-      <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
-      <p>IPA: ${app.ipa}</p>
-    `;
-
-    store.appendChild(div);
-  });
-}
-
-render();
-
-</script>
-
-</body>
-</html>  margin-top: 8px;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-}
-
-button {
-  background: #0a84ff;
-  color: white;
-  font-weight: bold;
-}
-
-.app {
-  background: #1a1a1a;
-  padding: 10px;
-  border-radius: 15px;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-img {
-  width: 70px;
-  height: 70px;
-  border-radius: 15px;
-}
-</style>
-</head>
-
-<body>
-
-<header>📱 IPA Store (Image Upload Enabled)</header>
-
-<div class="container">
-
-  <!-- UPLOAD PANEL -->
-  <div class="card">
-    <h3>Publish App</h3>
-
-    <input id="name" placeholder="App Name">
-
-    <input type="file" id="icon" accept="image/*">
-
-    <input id="plist" placeholder="Plist URL (direct install)">
-
-    <select id="price">
-      <option value="0">Free</option>
-      <option value="1">Paid $1</option>
-      <option value="5">Paid $5</option>
-    </select>
-
-    <button onclick="publish()">Publish App</button>
-  </div>
-
-  <!-- STORE -->
-  <div class="card">
-    <h3>Store</h3>
-    <div id="store"></div>
-  </div>
-
-</div>
-
-<script>
-
-let apps = JSON.parse(localStorage.getItem("apps") || "[]");
-
-// Convert image to base64
-function toBase64(file, callback) {
-  const reader = new FileReader();
-  reader.onload = () => callback(reader.result);
-  reader.readAsDataURL(file);
-}
-
-function publish() {
-
-  const name = document.getElementById("name").value;
   const plist = document.getElementById("plist").value;
   const price = document.getElementById("price").value;
-  const iconFile = document.getElementById("icon").files[0];
 
   if (!iconFile) {
     alert("Please select an icon image");
     return;
   }
 
-  toBase64(iconFile, (iconBase64) => {
+  const reader = new FileReader();
 
-    const app = {
-      name,
-      plist,
-      price,
-      icon: iconBase64
-    };
+  reader.onload = async () => {
 
-    apps.push(app);
-    localStorage.setItem("apps", JSON.stringify(apps));
+    await addDoc(collection(db, "apps"), {
+      name: name,
+      icon: reader.result,
+      plist: plist,
+      price: price
+    });
 
-    render();
-  });
-}
+    alert("App published!");
+    loadApps();
+  };
 
-function install(plist) {
-  window.location.href =
-    "itms-services://?action=download-manifest&url=" +
-    encodeURIComponent(plist);
-}
+  reader.readAsDataURL(iconFile);
+};
 
-function render() {
+// 📱 Load apps
+async function loadApps() {
+
   const store = document.getElementById("store");
   store.innerHTML = "";
 
-  apps.forEach(app => {
+  const snapshot = await getDocs(collection(db, "apps"));
+
+  snapshot.forEach(docSnap => {
+    const app = docSnap.data();
+
     const div = document.createElement("div");
-    div.className = "app";
 
     div.innerHTML = `
-      <img src="${app.icon}">
+      <img src="${app.icon}" width="70">
       <h3>${app.name}</h3>
       <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
       <button onclick="install('${app.plist}')">Install</button>
@@ -357,9 +71,12 @@ function render() {
   });
 }
 
-render();
+// 📲 Install function
+window.install = function(plist) {
+  window.location.href =
+    "itms-services://?action=download-manifest&url=" +
+    encodeURIComponent(plist);
+};
 
+loadApps();
 </script>
-
-</body>
-</html>
