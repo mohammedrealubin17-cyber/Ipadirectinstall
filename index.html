@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>IPA Store</title>
+<title>IPA Store Publisher</title>
 
 <style>
 body {
@@ -13,102 +13,147 @@ body {
 }
 
 header {
-  padding: 20px;
   text-align: center;
-  font-size: 24px;
+  padding: 20px;
+  font-size: 22px;
   background: #111;
-  font-weight: bold;
 }
 
 .container {
+  padding: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
-  padding: 15px;
 }
 
 .card {
   background: #1a1a1a;
   padding: 15px;
   border-radius: 15px;
-  text-align: center;
 }
 
-.card img {
-  width: 70px;
-  height: 70px;
-  border-radius: 15px;
+input, select, button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
 }
 
 button {
-  margin-top: 10px;
-  padding: 10px;
-  width: 100%;
-  border: none;
-  border-radius: 10px;
   background: #0a84ff;
   color: white;
   font-weight: bold;
 }
 
-.topbar {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+.app {
+  background: #1a1a1a;
   padding: 10px;
-}
-
-a {
-  color: white;
-  text-decoration: none;
-  background: #222;
-  padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 15px;
 }
 </style>
 </head>
 
 <body>
 
-<header>📱 IPA Store</header>
+<header>📱 IPA Store Publisher System</header>
 
-<div class="topbar">
-  <a href="index.html">Home</a>
-  <a href="upload.html">Upload App</a>
+<div class="container">
+
+  <!-- PUBLISH PANEL -->
+  <div class="card">
+    <h3>Publish App</h3>
+
+    <input id="name" placeholder="App Name">
+
+    <input id="icon" placeholder="Icon URL">
+
+    <input id="ipa" type="file" accept=".ipa">
+
+    <select id="mode">
+      <option value="direct">Direct Install IPA</option>
+      <option value="upload">Upload IPA File</option>
+    </select>
+
+    <select id="price">
+      <option value="0">Free</option>
+      <option value="1">Paid ($1)</option>
+      <option value="5">Paid ($5)</option>
+    </select>
+
+    <button onclick="publish()">Publish App</button>
+  </div>
+
+  <!-- STORE -->
+  <div class="card">
+    <h3>Store</h3>
+    <div id="store"></div>
+  </div>
+
 </div>
 
-<h3 style="text-align:center;">Available Apps</h3>
-
-<div class="container" id="store"></div>
-
 <script>
-// Load apps from upload page (demo storage)
+
 let apps = JSON.parse(localStorage.getItem("apps") || "[]");
 
-function install(plist) {
-  window.location.href =
-    "itms-services://?action=download-manifest&url=" +
-    encodeURIComponent(plist);
+function publish() {
+
+  const name = document.getElementById("name").value;
+  const icon = document.getElementById("icon").value;
+  const mode = document.getElementById("mode").value;
+  const price = document.getElementById("price").value;
+
+  const ipaFile = document.getElementById("ipa").files[0];
+
+  // Fake "direct install conversion"
+  let installLink;
+
+  if (mode === "direct") {
+    installLink = "https://yourdomain.com/" + name + ".plist";
+  } else {
+    installLink = "uploaded-file://" + (ipaFile ? ipaFile.name : "unknown.ipa");
+  }
+
+  const app = {
+    name,
+    icon,
+    price,
+    mode,
+    install: installLink
+  };
+
+  apps.push(app);
+  localStorage.setItem("apps", JSON.stringify(apps));
+
+  render();
+}
+
+function install(link) {
+  if (link.startsWith("https://")) {
+    window.location.href =
+      "itms-services://?action=download-manifest&url=" +
+      encodeURIComponent(link);
+  } else {
+    alert("This IPA is uploaded but not hosted. Backend required.");
+  }
 }
 
 function render() {
   const store = document.getElementById("store");
   store.innerHTML = "";
 
-  if (apps.length === 0) {
-    store.innerHTML = "<p style='text-align:center;'>No apps yet</p>";
-    return;
-  }
-
   apps.forEach(app => {
     const div = document.createElement("div");
-    div.className = "card";
+    div.className = "app";
 
     div.innerHTML = `
-      <img src="${app.icon}">
-      <h3>${app.name}</h3>
+      <h4>${app.name}</h4>
+      <img src="${app.icon}" width="60">
       <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
-      <button onclick="install('${app.plist}')">Install</button>
+      <p>Mode: ${app.mode}</p>
+      <button onclick="install('${app.install}')">
+        Install
+      </button>
     `;
 
     store.appendChild(div);
@@ -116,6 +161,7 @@ function render() {
 }
 
 render();
+
 </script>
 
 </body>
