@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>IPA Store Upload System</title>
+<title>Safe IPA Publisher</title>
 
 <style>
 body {
@@ -35,6 +35,206 @@ header {
 input, select, button {
   width: 100%;
   margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+}
+
+button {
+  background: #0a84ff;
+  color: white;
+  font-weight: bold;
+}
+
+.app {
+  background: #1a1a1a;
+  padding: 10px;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+img {
+  width: 70px;
+  height: 70px;
+  border-radius: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<header>📱 SAFE IPA STORE PUBLISHER</header>
+
+<div class="container">
+
+  <!-- PUBLISH -->
+  <div class="card">
+    <h3>Publish App</h3>
+
+    <input id="name" placeholder="App Name">
+
+    <!-- ICON FILE (SAFE LABELED) -->
+    <label>App Icon (image only)</label>
+    <input id="icon" type="file" accept="image/*">
+
+    <!-- IPA FILE (SAFE LABELED) -->
+    <label>IPA File (ONLY .ipa allowed)</label>
+    <input id="ipa" type="file" accept=".ipa">
+
+    <select id="price">
+      <option value="0">Free</option>
+      <option value="1">Paid $1</option>
+      <option value="5">Paid $5</option>
+    </select>
+
+    <label>
+      <input type="checkbox" id="makePlist">
+      Generate plist file (download)
+    </label>
+
+    <button onclick="publish()">Publish App</button>
+  </div>
+
+  <!-- STORE -->
+  <div class="card">
+    <h3>Store</h3>
+    <div id="store"></div>
+  </div>
+
+</div>
+
+<script>
+
+let apps = JSON.parse(localStorage.getItem("apps") || "[]");
+
+// Convert file → base64
+function toBase64(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Validate file types
+function validate(icon, ipa) {
+  if (!icon || !icon.type.startsWith("image/")) {
+    alert("Icon must be an image file");
+    return false;
+  }
+
+  if (!ipa || !ipa.name.endsWith(".ipa")) {
+    alert("You must upload a valid .ipa file");
+    return false;
+  }
+
+  return true;
+}
+
+// Create plist text
+function createPlist(app) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>items</key>
+  <array>
+    <dict>
+      <key>assets</key>
+      <array>
+        <dict>
+          <key>kind</key>
+          <string>software-package</string>
+          <key>url</key>
+          <string>https://yourdomain.com/${app.name}.ipa</string>
+        </dict>
+      </array>
+      <key>metadata</key>
+      <dict>
+        <key>bundle-identifier</key>
+        <string>com.${app.name.toLowerCase()}</string>
+        <key>bundle-version</key>
+        <string>1.0</string>
+        <key>kind</key>
+        <string>software</string>
+        <key>title</key>
+        <string>${app.name}</string>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>`;
+}
+
+// Download plist file
+function downloadPlist(text, name) {
+  const blob = new Blob([text], { type: "text/xml" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name + ".plist";
+  a.click();
+}
+
+async function publish() {
+
+  const name = document.getElementById("name").value;
+  const iconFile = document.getElementById("icon").files[0];
+  const ipaFile = document.getElementById("ipa").files[0];
+  const price = document.getElementById("price").value;
+  const makePlist = document.getElementById("makePlist").checked;
+
+  if (!validate(iconFile, ipaFile)) return;
+
+  const iconBase64 = await toBase64(iconFile);
+
+  const app = {
+    name,
+    icon: iconBase64,
+    price,
+    ipa: ipaFile.name
+  };
+
+  apps.push(app);
+  localStorage.setItem("apps", JSON.stringify(apps));
+
+  render();
+
+  // optional plist generator
+  if (makePlist) {
+    const plist = createPlist(app);
+    downloadPlist(plist, name);
+  }
+}
+
+function render() {
+  const store = document.getElementById("store");
+  store.innerHTML = "";
+
+  apps.forEach(app => {
+    const div = document.createElement("div");
+    div.className = "app";
+
+    div.innerHTML = `
+      <img src="${app.icon}">
+      <h3>${app.name}</h3>
+      <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
+      <p>IPA: ${app.ipa}</p>
+    `;
+
+    store.appendChild(div);
+  });
+}
+
+render();
+
+</script>
+
+</body>
+</html>  margin-top: 8px;
   padding: 10px;
   border-radius: 10px;
   border: none;
