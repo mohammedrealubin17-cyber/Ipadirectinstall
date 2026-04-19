@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>App Details</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d0d0d;
+  color: white;
+  text-align: center;
+}
+
+.card {
+  margin: 20px;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 20px;
+}
+
+img {
+  width: 120px;
+  height: 120px;
+  border-radius: 25px;
+}
+
+button {
+  margin-top: 15px;
+  padding: 12px;
+  width: 80%;
+  border: none;
+  border-radius: 12px;
+  background: #0a84ff;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.nav a {
+  color: white;
+  text-decoration: none;
+  margin: 10px;
+  background: #222;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+  <a href="index.html">Home</a>
+  <a href="store.html">Store</a>
+</div>
+
+<div class="card" id="app"></div>
+
+<script>
+// Get app index from URL (?id=0)
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id") || 0;
+
+// Load apps from storage
+let apps = JSON.parse(localStorage.getItem("apps") || "[]");
+
+const app = apps[id];
+
+if (!app) {
+  document.getElementById("app").innerHTML =
+    "<h2>App not found</h2>";
+} else {
+  document.getElementById("app").innerHTML = `
+    <img src="${app.icon}">
+    <h2>${app.name}</h2>
+    <p>Price: ${app.price == 0 ? "Free" : "$" + app.price}</p>
+    <button onclick="install('${app.plist}')">
+      Install App
+    </button>
+  `;
+}
+
+function install(plist) {
+  window.location.href =
+    "itms-services://?action=download-manifest&url=" +
+    encodeURIComponent(plist);
+}
+</script>
+
+</body>
+</html>
