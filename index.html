@@ -1,114 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>IPA App Store</title>
+<title>IPA Store</title>
 
 <style>
-  body {
-    margin: 0;
-    font-family: -apple-system, sans-serif;
-    background: #0f0f0f;
-    color: white;
-  }
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d0d0d;
+  color: white;
+}
 
-  header {
-    padding: 20px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    background: #1c1c1e;
-  }
+header {
+  padding: 20px;
+  text-align: center;
+  font-size: 24px;
+  background: #111;
+  font-weight: bold;
+}
 
-  .container {
-    padding: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-  }
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  padding: 15px;
+}
 
-  .app-card {
-    background: #1c1c1e;
-    border-radius: 20px;
-    padding: 15px;
-    text-align: center;
-    transition: 0.2s;
-  }
+.card {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 15px;
+  text-align: center;
+}
 
-  .app-card:hover {
-    transform: scale(1.05);
-  }
+.card img {
+  width: 70px;
+  height: 70px;
+  border-radius: 15px;
+}
 
-  .app-icon {
-    width: 100px;
-    height: 100px;
-    border-radius: 22px;
-    margin-bottom: 10px;
-  }
+button {
+  margin-top: 10px;
+  padding: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: #0a84ff;
+  color: white;
+  font-weight: bold;
+}
 
-  .app-title {
-    font-size: 18px;
-    margin-bottom: 5px;
-  }
+.topbar {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+}
 
-  .app-desc {
-    font-size: 13px;
-    color: #aaa;
-    margin-bottom: 10px;
-  }
-
-  .install-btn {
-    background: #0a84ff;
-    border: none;
-    padding: 10px;
-    border-radius: 12px;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  .install-btn:hover {
-    background: #409cff;
-  }
+a {
+  color: white;
+  text-decoration: none;
+  background: #222;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
 </style>
 </head>
 
 <body>
 
-<header>📱 IPA App Store</header>
+<header>📱 IPA Store</header>
 
-<div class="container">
-
-  <!-- APP 1 -->
-  <div class="app-card">
-    <img class="app-icon" src="https://via.placeholder.com/100">
-    <div class="app-title">My App</div>
-    <div class="app-desc">Cool IPA app</div>
-    <button class="install-btn"
-      onclick="install('https://yourdomain.com/app.plist')">
-      Install
-    </button>
-  </div>
-
-  <!-- APP 2 -->
-  <div class="app-card">
-    <img class="app-icon" src="https://via.placeholder.com/100">
-    <div class="app-title">Game App</div>
-    <div class="app-desc">Fun game IPA</div>
-    <button class="install-btn"
-      onclick="install('https://yourdomain.com/game.plist')">
-      Install
-    </button>
-  </div>
-
+<div class="topbar">
+  <a href="index.html">Home</a>
+  <a href="upload.html">Upload App</a>
 </div>
 
+<h3 style="text-align:center;">Available Apps</h3>
+
+<div class="container" id="store"></div>
+
 <script>
-function install(plistURL) {
+// Load apps from upload page (demo storage)
+let apps = JSON.parse(localStorage.getItem("apps") || "[]");
+
+function install(plist) {
   window.location.href =
     "itms-services://?action=download-manifest&url=" +
-    encodeURIComponent(plistURL);
+    encodeURIComponent(plist);
 }
+
+function render() {
+  const store = document.getElementById("store");
+  store.innerHTML = "";
+
+  if (apps.length === 0) {
+    store.innerHTML = "<p style='text-align:center;'>No apps yet</p>";
+    return;
+  }
+
+  apps.forEach(app => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <img src="${app.icon}">
+      <h3>${app.name}</h3>
+      <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
+      <button onclick="install('${app.plist}')">Install</button>
+    `;
+
+    store.appendChild(div);
+  });
+}
+
+render();
 </script>
 
 </body>
