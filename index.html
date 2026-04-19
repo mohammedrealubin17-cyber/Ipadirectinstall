@@ -1,14 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>IPA Store (Firebase + Auto Plist)</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d0d0d;
+  color: white;
+}
+
+header {
+  text-align: center;
+  padding: 20px;
+  background: #111;
+  font-size: 22px;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 15px;
+}
+
+.card {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 15px;
+}
+
+input, select, button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+}
+
+button {
+  background: #0a84ff;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.app {
+  background: #1a1a1a;
+  padding: 10px;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+img {
+  width: 70px;
+  height: 70px;
+  border-radius: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<header>📱 Firebase IPA Store (Auto Plist System)</header>
+
+<div class="container">
+
+  <!-- PUBLISH -->
+  <div class="card">
+    <h3>Publish App</h3>
+
+    <input id="name" placeholder="App Name">
+
+    <label>App Icon (image)</label>
+    <input type="file" id="icon" accept="image/*">
+
+    <input id="plist" placeholder="IPA URL (must be hosted .ipa link)">
+
+    <select id="price">
+      <option value="0">Free</option>
+      <option value="1">Paid $1</option>
+      <option value="5">Paid $5</option>
+    </select>
+
+    <button onclick="publish()">Publish App</button>
+  </div>
+
+  <!-- STORE -->
+  <div class="card">
+    <h3>Store</h3>
+    <div id="store"></div>
+  </div>
+
+</div>
+
 <script type="module">
 
-function generatePlist({ name, ipaUrl, bundleId, version }) {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+// 🔥 FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyBdpU_R65rhoWwfZOhw6D0aYyZRMQZ2XR8",
+  authDomain: "ipa-store-6d0b3.firebaseapp.com",
+  projectId: "ipa-store-6d0b3",
+  storageBucket: "ipa-store-6d0b3.firebasestorage.app",
+  messagingSenderId: "814971997334",
+  appId: "1:814971997334:web:6d0fbfcc253149b725c6b7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+
+// 🧠 AUTO PLIST GENERATOR
+function createPlist(name, ipaUrl) {
+
+  const bundleId = "com." + name.toLowerCase().replace(/\s/g, "");
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
 <plist version="1.0">
 <dict>
   <key>items</key>
   <array>
     <dict>
+
       <key>assets</key>
       <array>
         <dict>
@@ -25,7 +148,7 @@ function generatePlist({ name, ipaUrl, bundleId, version }) {
         <string>${bundleId}</string>
 
         <key>bundle-version</key>
-        <string>${version}</string>
+        <string>1.0</string>
 
         <key>kind</key>
         <string>software</string>
@@ -33,13 +156,15 @@ function generatePlist({ name, ipaUrl, bundleId, version }) {
         <key>title</key>
         <string>${name}</string>
       </dict>
+
     </dict>
   </array>
 </dict>
 </plist>`;
 }
 
-// 📦 Download plist
+
+// 📥 DOWNLOAD PLIST
 function downloadPlist(content, name) {
   const blob = new Blob([content], { type: "text/xml" });
   const url = URL.createObjectURL(blob);
@@ -50,16 +175,17 @@ function downloadPlist(content, name) {
   a.click();
 }
 
-// 📤 AUTO PUBLISH WITH PLIST
+
+// 📤 PUBLISH APP
 window.publish = async function () {
 
   const name = document.getElementById("name").value;
   const iconFile = document.getElementById("icon").files[0];
-  const ipaUrl = document.getElementById("plist").value; 
+  const ipaUrl = document.getElementById("plist").value;
   const price = document.getElementById("price").value;
 
   if (!name || !iconFile || !ipaUrl) {
-    alert("Fill all fields");
+    alert("Fill all fields!");
     return;
   }
 
@@ -67,17 +193,68 @@ window.publish = async function () {
 
   reader.onload = async () => {
 
-    // 🧠 Generate bundle id automatically
-    const bundleId = "com." + name.toLowerCase().replace(/\s/g, "");
+    // 🧠 generate plist
+    const plist = createPlist(name, ipaUrl);
 
-    // 🔥 Create plist automatically
-    const plist = generatePlist({
+    // 📥 download plist automatically
+    downloadPlist(plist, name);
+
+    // 💾 save to Firebase
+    await addDoc(collection(db, "apps"), {
       name,
-      ipaUrl,
-      bundleId,
-      version: "1.0"
+      icon: reader.result,
+      plist: ipaUrl,
+      price
     });
 
+    alert("App published + plist downloaded!");
+    loadApps();
+  };
+
+  reader.readAsDataURL(iconFile);
+};
+
+
+// 📱 LOAD APPS
+async function loadApps() {
+
+  const store = document.getElementById("store");
+  store.innerHTML = "";
+
+  const snapshot = await getDocs(collection(db, "apps"));
+
+  snapshot.forEach(docSnap => {
+
+    const app = docSnap.data();
+
+    const div = document.createElement("div");
+    div.className = "app";
+
+    div.innerHTML = `
+      <img src="${app.icon}">
+      <h3>${app.name}</h3>
+      <p>${app.price == 0 ? "Free" : "$" + app.price}</p>
+      <button onclick="install('${app.plist}')">Install</button>
+    `;
+
+    store.appendChild(div);
+  });
+}
+
+
+// 📲 INSTALL
+window.install = function(plist) {
+  window.location.href =
+    "itms-services://?action=download-manifest&url=" +
+    encodeURIComponent(plist);
+};
+
+loadApps();
+
+</script>
+
+</body>
+</html>
     // 📥 Download plist instantly
     downloadPlist(plist, name);
 
