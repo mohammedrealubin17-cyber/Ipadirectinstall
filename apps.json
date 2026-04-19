@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "name": "My App",
+    "icon": "https://i.imgur.com/abc.png",
+    "plist": "https://yourdomain.com/app.plist",
+    "price": 0
+  }
+]
