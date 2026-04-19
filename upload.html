@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Upload App</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0d0d0d;
+  color: white;
+  text-align: center;
+}
+
+input, button {
+  width: 80%;
+  padding: 10px;
+  margin: 8px;
+  border-radius: 10px;
+  border: none;
+}
+
+button {
+  background: #0a84ff;
+  color: white;
+  font-weight: bold;
+}
+
+.card {
+  background: #1a1a1a;
+  margin: 20px;
+  padding: 15px;
+  border-radius: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📤 Publish IPA App</h1>
+
+<div class="card">
+
+  <input id="name" placeholder="App Name">
+  <input id="icon" placeholder="Icon URL">
+  <input id="plist" placeholder="Plist URL (direct install)">
+  <input id="price" placeholder="Price (0 = free)">
+
+  <button onclick="publish()">Publish</button>
+
+</div>
+
+<h3>Preview:</h3>
+<div id="preview"></div>
+
+<script>
+function publish() {
+  const app = {
+    name: document.getElementById("name").value,
+    icon: document.getElementById("icon").value,
+    plist: document.getElementById("plist").value,
+    price: document.getElementById("price").value
+  };
+
+  localStorage.setItem("lastApp", JSON.stringify(app));
+
+  document.getElementById("preview").innerHTML = `
+    <h2>${app.name}</h2>
+    <img src="${app.icon}" width="80">
+    <p>Price: ${app.price == 0 ? "Free" : "$" + app.price}</p>
+  `;
+
+  alert("App saved (demo only)");
+}
+</script>
+
+</body>
+</html>
